@@ -254,15 +254,31 @@ Compositing: если там `software` или WebRender заблокирова�
 
 ## Как выложить в интернет
 
-**`standalone/` можно выложить куда угодно** — это обычные статические
-файлы. GitHub Pages подойдёт:
+**`standalone/` можно выложить куда угодно** — это обычные статические файлы.
+
+Тонкость: GitHub Pages умеет брать сайт только из корня ветки или из папки
+`docs/`. Произвольную подпапку вроде `standalone/` он не примет. Поэтому
+содержимое `standalone/` отправляем отдельной веткой `gh-pages`, где оно
+окажется в корне:
 
 ```bash
 cd ~/Desktop/NeuroViz
-git init && git add . && git commit -m "Нейросеть: школьный проект"
 gh repo create NeuroViz --public --source=. --push
+
+# standalone/ становится корнем ветки gh-pages
+git subtree push --prefix standalone origin gh-pages
+
 gh api -X POST repos/M1TAUT/NeuroViz/pages \
-  -f "source[branch]=main" -f "source[path]=/standalone"
+  -f "source[branch]=gh-pages" -f "source[path]=/"
+```
+
+Через минуту сайт будет на `m1taut.github.io/NeuroViz/`.
+
+Когда поправишь что-то в `standalone/`, обновить так:
+
+```bash
+git add . && git commit -m "правки" && git push
+git subtree push --prefix standalone origin gh-pages
 ```
 
 **`python/` так выложить нельзя** — Pages раздаёт только статику и Python не
