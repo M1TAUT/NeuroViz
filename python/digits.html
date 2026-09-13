@@ -86,6 +86,32 @@
   .offbox p{margin:0; color:var(--dim2); font-size:14.5px; line-height:1.6}
   .offbox pre{margin:0; background:#0d0d0d; border:1px solid var(--line2); border-radius:10px;
     padding:14px 16px; font-family:var(--mono); font-size:13px; color:#fff; overflow-x:auto}
+
+  /* ================= телефон ================= */
+  @media (max-width:900px){
+    html,body{height:auto; overflow:auto; overflow-x:hidden}
+    .app{height:auto; min-height:100svh; grid-template-rows:auto auto; gap:12px}
+
+    .top{gap:12px 14px; padding:12px 14px}
+    .stats{margin-left:0; width:100%; gap:16px; flex-wrap:wrap; align-items:center}
+    .stat b{font-size:19px}
+
+    .main{grid-template-columns:1fr; gap:12px}
+    .col{min-height:0}
+    .pad{overflow:visible}
+    .stage{min-height:360px}
+    .out{min-height:0}
+    #feats{min-height:300px}
+
+    /* холст для рисования — во всю ширину, но не гигантский */
+    .drawwrap{width:100%; max-width:330px}
+    #draw{width:100%; height:auto}
+  }
+  @media (max-width:560px){
+    .seen{flex-direction:column; align-items:flex-start; gap:10px}
+    .bars{gap:6px}
+    .verdict b{font-size:44px}
+  }
 </style>
 </head>
 <body>

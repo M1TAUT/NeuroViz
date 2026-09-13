@@ -179,6 +179,37 @@
   .scale{display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:9.5px; color:var(--dim)}
   .scale i{flex:1; height:6px; border-radius:3px; background:linear-gradient(90deg,#101010,#767676,#e8e8e8); border:1px solid var(--line)}
 
+
+  /* ================= телефон ================= */
+  @media (max-width:900px){
+    html,body{height:auto; overflow:auto; overflow-x:hidden}
+    .app{height:auto; min-height:100svh; grid-template-rows:auto auto; gap:12px}
+
+    /* шапка: перенос без обрезания цифр */
+    .top{gap:12px 14px; padding:12px 14px}
+    .epoch b{font-size:20px}
+    .fields{margin-left:0; width:100%; gap:10px}
+    .fld{flex:1 1 calc(50% - 5px); min-width:0}
+
+    /* три колонки -> одна */
+    .main{grid-template-columns:1fr; gap:12px}
+    .col{min-height:0}
+    .side{overflow:visible}
+
+    /* граф должен остаться крупным, но помещаться */
+    #netwrap{height:58svh; min-height:340px}
+    .stage{overflow:visible}
+    .foot{font-size:11px; gap:10px}
+
+    /* карта выхода по ширине экрана */
+    .out{gap:14px}
+    .outframe{width:100%; max-width:420px}
+  }
+  @media (max-width:560px){
+    #netwrap{height:52svh; min-height:300px}
+    .metrics{flex-wrap:wrap}
+    .mc{min-width:calc(50% - 5px)}
+  }
 </style>
 </head>
 <body>

@@ -2,221 +2,259 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Нейронная сеть — школьный проект</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Нейронная сеть — как машина учится узнавать</title>
 <style>
   :root{
-    --bg:#000; --panel:#0a0a0a; --line:#1b1b1b; --line2:#2c2c2c;
-    --tx:#f2f2f2; --dim:#666; --dim2:#9b9b9b;
+    --bg:#000;
+    --panel:#0b0b0b;
+    --line:#1c1c1c;
+    --line2:#333;
+    --tx:#f4f4f4;
+    --dim:#8a8a8a;
+    --dim2:#5e5e5e;
     --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
   }
-  *{box-sizing:border-box}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%}
   body{
-    margin:0; background:var(--bg); color:var(--tx); min-height:100vh;
-    font:15px/1.6 -apple-system,"Segoe UI",Inter,system-ui,sans-serif;
-    -webkit-font-smoothing:antialiased;
+    margin:0; background:var(--bg); color:var(--tx); min-height:100svh;
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
   }
-  .wrap{max-width:940px; margin:0 auto; padding:64px 24px 80px}
-  .cap{font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--dim); font-weight:700}
+  .wrap{
+    max-width:900px; margin:0 auto;
+    padding:clamp(40px,9vw,88px) clamp(20px,5vw,28px) clamp(56px,10vw,96px);
+  }
 
-  header{display:flex; flex-direction:column; gap:16px; margin-bottom:52px}
-  .brand{display:flex; align-items:center; gap:11px}
-  .brand i{width:11px; height:11px; border-radius:50%; background:#fff; display:block}
+  /* ---------------- шапка ---------------- */
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:9px;
+    font-size:11px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--dim); font-weight:700;
+  }
+  .eyebrow i{width:7px; height:7px; border-radius:50%; background:#fff; display:block}
+
   h1{
-    margin:0; font-size:clamp(30px,5.2vw,46px); font-weight:750;
-    line-height:1.1; letter-spacing:-.025em; text-wrap:balance;
+    margin:22px 0 0;
+    font-size:clamp(34px,8.5vw,62px);
+    line-height:1.04; letter-spacing:-.035em; font-weight:800;
+    text-wrap:balance;
   }
-  .lead{margin:0; max-width:62ch; color:#c4c4c4; font-size:17px}
-  .lead b{color:#fff; font-weight:650}
+  h1 em{font-style:normal; color:var(--dim2)}
 
-  /* ---------- две карточки ---------- */
-  .cards{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:44px}
-  @media (max-width:720px){ .cards{grid-template-columns:1fr} }
+  .lede{
+    margin:24px 0 0; max-width:34ch;
+    font-size:clamp(17px,4.2vw,20px); line-height:1.5; color:#cfcfcf;
+    text-wrap:pretty;
+  }
+  .lede b{color:#fff; font-weight:650}
+
+  /* ---------------- карточки ---------------- */
+  .cards{
+    display:grid; gap:14px; margin:clamp(38px,8vw,60px) 0 0;
+    grid-template-columns:1fr;
+  }
+  @media (min-width:700px){ .cards{grid-template-columns:1fr 1fr; gap:18px} }
+
   .card{
-    display:flex; flex-direction:column; text-decoration:none; color:inherit;
-    background:var(--panel); border:1px solid var(--line2); border-radius:16px;
-    overflow:hidden; transition:border-color .14s, transform .14s;
+    position:relative; display:block; text-decoration:none; color:inherit;
+    background:var(--panel); border:1px solid var(--line2); border-radius:20px;
+    overflow:hidden; transition:border-color .18s, transform .18s;
   }
-  .card:hover{border-color:#fff; transform:translateY(-3px)}
-  .card canvas{width:100%; height:190px; display:block; background:#050505;
-    border-bottom:1px solid var(--line)}
-  .card .body{padding:18px 20px 20px; display:flex; flex-direction:column; gap:8px; flex:1}
-  .card h2{margin:0; font-size:19px; font-weight:700; letter-spacing:-.01em}
-  .card p{margin:0; font-size:14px; color:var(--dim2); line-height:1.55}
-  .card .go{
-    margin-top:auto; padding-top:12px; font-family:var(--mono); font-size:12px; color:var(--dim);
-    display:flex; justify-content:space-between; align-items:center;
+  @media (hover:hover){
+    .card:hover{border-color:#fff; transform:translateY(-4px)}
+    .card:hover .arrow{background:#fff; color:#000; border-color:#fff}
   }
-  .card:hover .go{color:#fff}
+  .card:active{transform:scale(.99)}
+  .card canvas{
+    width:100%; display:block; background:#050505;
+    aspect-ratio:16/11; border-bottom:1px solid var(--line);
+  }
+  .card .body{padding:20px 20px 22px}
+  .card h2{
+    margin:0; font-size:clamp(20px,5vw,23px); font-weight:700; letter-spacing:-.02em;
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+  }
+  .arrow{
+    flex:none; width:34px; height:34px; border-radius:50%;
+    border:1px solid var(--line2); color:var(--dim);
+    display:grid; place-items:center; font-size:15px; transition:.18s;
+  }
+  .card p{margin:9px 0 0; font-size:15px; line-height:1.55; color:var(--dim); max-width:42ch}
 
-  /* ---------- файлы ---------- */
-  .files{display:flex; flex-direction:column; border-top:1px solid var(--line)}
-  .f{
-    display:grid; grid-template-columns:178px 1fr; gap:20px; align-items:baseline;
-    padding:14px 0; border-bottom:1px solid var(--line);
+  /* ---------------- что увидишь ---------------- */
+  .what{margin:clamp(46px,9vw,72px) 0 0}
+  .what h3{
+    margin:0 0 4px; font-size:11px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--dim2); font-weight:700;
   }
-  .f code{font-family:var(--mono); font-size:13px; color:#fff; font-weight:600}
-  .f a{text-decoration:none; border-bottom:1px solid var(--line2)}
-  .f a:hover{border-bottom-color:#fff}
-  .f p{margin:0; font-size:14px; color:var(--dim2)}
-  .f p b{color:#d8d8d8; font-weight:650}
-  @media (max-width:620px){ .f{grid-template-columns:1fr; gap:4px} }
+  .list{display:grid; gap:0; margin-top:18px}
+  .item{
+    display:grid; grid-template-columns:auto 1fr; gap:16px; align-items:start;
+    padding:20px 0; border-top:1px solid var(--line);
+  }
+  .item:last-child{border-bottom:1px solid var(--line)}
+  .item .n{
+    font-family:var(--mono); font-size:12px; color:var(--dim2);
+    padding-top:4px; font-variant-numeric:tabular-nums;
+  }
+  .item h4{margin:0; font-size:17px; font-weight:650; letter-spacing:-.01em}
+  .item p{margin:5px 0 0; font-size:15px; line-height:1.55; color:var(--dim); max-width:48ch}
 
-  section{margin-bottom:44px}
-  section > .cap{display:block; margin-bottom:14px}
-  .run{
-    font-family:var(--mono); font-size:12.5px; color:var(--dim2);
-    background:#0d0d0d; border:1px solid var(--line); border-radius:8px;
-    padding:10px 14px; display:inline-block; margin-top:10px;
+  /* ---------------- низ ---------------- */
+  footer{
+    margin-top:clamp(46px,9vw,72px); padding-top:26px; border-top:1px solid var(--line);
+    display:flex; flex-wrap:wrap; gap:14px 20px; align-items:center;
   }
-  footer{border-top:1px solid var(--line); padding-top:20px; color:var(--dim); font-size:13px}
-  footer a{color:var(--dim2)}
+  footer p{margin:0; font-size:14px; color:var(--dim2); max-width:40ch}
+  .ghost{
+    margin-left:auto; text-decoration:none; white-space:nowrap;
+    color:var(--dim); border:1px solid var(--line2); border-radius:11px;
+    padding:11px 17px; font-size:14px; transition:.16s;
+  }
+  @media (hover:hover){ .ghost:hover{background:#fff; color:#000; border-color:#fff} }
+  @media (max-width:520px){ .ghost{margin-left:0; width:100%; text-align:center} }
+
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important} }
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <header>
-    <div class="brand"><i></i><span class="cap">Школьный проект</span></div>
-    <h1>Нейронная сеть:<br>как машина учится узнавать</h1>
-    <p class="lead">Внутри нейросети нет записанных правил. Есть только числа, которые она подбирает сама, раз за разом сравнивая свой ответ с правильным. Здесь этот процесс <b>видно целиком</b> — от случайного шума в начале до работающего распознавания.</p>
-    <p class="lead" style="font-size:15px"><b>Нейросеть написана на Python</b> и считается на сервере. Страницы на JavaScript только рисуют то, что он присылает, — это обычное разделение: математика отдельно, интерфейс отдельно.</p>
-    <div class="run" style="margin-top:4px">сначала запусти сервер: &nbsp;<b style="color:#fff">python3 python/server.py</b></div>
+    <span class="eyebrow"><i></i>Школьный проект</span>
+    <h1>Как машина<br>учится <em>узнавать</em></h1>
+    <p class="lede">Никто не пишет для неё правил. Она смотрит на примеры,
+       ошибается и понемногу исправляется — <b>тысячи раз подряд</b>.
+       Здесь видно, как из этого получается умение.</p>
   </header>
 
-  <div class="cards">
+  <main class="cards">
     <a class="card" href="playground.html">
-      <canvas id="prevA" width="440" height="380"></canvas>
+      <canvas id="prevA" width="560" height="385"></canvas>
       <div class="body">
-        <h2>Игровая сеть</h2>
-        <p>Точки двух видов, которые надо научиться различать. Видно каждый нейрон и что именно он выучил. Сеть можно менять на ходу и даже подёргать мышкой.</p>
-        <div class="go"><span>открыть</span><span>→</span></div>
+        <h2>Учится различать<span class="arrow">→</span></h2>
+        <p>Два вида точек, которые надо разделить. Видно каждую часть сети
+           и то, что она поняла. Можно менять на ходу и трогать руками.</p>
       </div>
     </a>
 
     <a class="card" href="digits.html">
-      <canvas id="prevB" width="440" height="380"></canvas>
+      <canvas id="prevB" width="560" height="385"></canvas>
       <div class="body">
-        <h2>Распознавание цифр</h2>
-        <p>Обучается на настоящем человеческом почерке. Нарисуй цифру мышью — и посмотри, узнает ли. Заодно видно, что именно сеть разглядела в рисунке.</p>
-        <div class="go"><span>открыть</span><span>→</span></div>
+        <h2>Читает почерк<span class="arrow">→</span></h2>
+        <p>Учится на тысячах рукописных цифр. Нарисуй свою — и посмотри,
+           узнает ли она её и насколько будет уверена.</p>
       </div>
     </a>
-  </div>
+  </main>
 
-  <section>
-    <span class="cap">Как это устроено внутри</span>
-    <div class="files">
-      <div class="f">
-        <code>python/server.py</code>
-        <p><b>Здесь живёт нейросеть.</b> Прямой проход, обратное распространение, градиентный спуск — вся математика проекта. Он же раздаёт эти страницы, поэтому запускать надо только его.</p>
+  <section class="what">
+    <h3>Что можно заметить</h3>
+    <div class="list">
+      <div class="item">
+        <span class="n">01</span>
+        <div>
+          <h4>Сначала она не умеет ничего</h4>
+          <p>В самом начале ответы случайны — это видно по картинке.
+             Умение появляется на глазах, за несколько секунд.</p>
+        </div>
       </div>
-      <div class="f">
-        <code>python/nn.py</code>
-        <p><b>Та же сеть, но без интерфейса.</b> Сто строк с подробными комментариями. Учится решать «исключающее ИЛИ» — самую маленькую задачу, которую невозможно решить без скрытого слоя.</p>
+      <div class="item">
+        <span class="n">02</span>
+        <div>
+          <h4>Простое складывается в сложное</h4>
+          <p>Каждая часть сети сама по себе примитивна. Но вместе они
+             собирают границу, которую одной линией не провести.</p>
+        </div>
       </div>
-      <div class="f">
-        <code>python/nn_mnist.py</code>
-        <p><b>Она же на рукописных цифрах.</b> Даёт 93.6% на данных, которых не видела. В выводе прямо видно переобучение: точность на знакомых примерах уходит к 99.8%, а на новых замирает.</p>
-      </div>
-      <div class="f">
-        <code>nn-from-scratch.js</code>
-        <p>То же самое на JavaScript, обычными циклами вместо матриц — если захочется посмотреть на формулы совсем в лоб.</p>
-      </div>
-      <div class="f">
-        <a href="titul.html"><code>titul.html</code></a>
-        <p>Титульный лист и описание проекта. Открыть и нажать «Печать / сохранить в PDF».</p>
+      <div class="item">
+        <span class="n">03</span>
+        <div>
+          <h4>Иногда она зубрит вместо того, чтобы понять</h4>
+          <p>Если примеров мало, машина запоминает их наизусть и теряется
+             на новых. Это тоже можно увидеть — и вылечить.</p>
+        </div>
       </div>
     </div>
-    <div class="run">python3 python/nn.py &nbsp;·&nbsp; python3 python/nn_mnist.py</div>
   </section>
 
   <footer>
-    Из библиотек только numpy — он даёт быстрые массивы, но ничего не знает про нейросети.
-    Ни TensorFlow, ни PyTorch: прямой проход и обратное распространение написаны вручную.
+    <p>Считает Python, показывает браузер — как в настоящих проектах.</p>
+    <a class="ghost" href="titul.html">О проекте</a>
   </footer>
 
 </div>
 
 <script>
 "use strict";
-/* Превью на карточках. Рисуются один раз, никакого обучения здесь нет —
-   это просто иллюстрации того, что ждёт внутри. */
-
+/* Превью на карточках — просто иллюстрации, никакого обучения здесь нет. */
 function randn(){ let u=0,v=0; while(!u)u=Math.random(); while(!v)v=Math.random();
   return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
 
-/* ---- карточка 1: две спирали с намёком на границу ---- */
+/* ---- спирали на фоне закрученной границы ---- */
 (function(){
   const c=document.getElementById("prevA"), x=c.getContext("2d");
   const W=c.width, H=c.height;
-  x.fillStyle="#050505"; x.fillRect(0,0,W,H);
-
-  // мягкая «граница решения» фоном: две светлоты, закрученные спиралью
   const img=x.createImageData(W,H);
-  const cx=W/2, cy=H/2, R=Math.min(W,H)*0.46;
+  const cx=W/2, cy=H/2, R=Math.min(W,H)*0.47;
   for(let py=0;py<H;py++){
     for(let px=0;px<W;px++){
       const dx=(px-cx)/R, dy=(py-cy)/R;
       const r=Math.hypot(dx,dy), a=Math.atan2(dy,dx);
-      // закрученная волна: чередование двух областей вдоль спирали
       const v=Math.sin(a - r*4.1);
-      const g=Math.round(26+(120-26)*(v>0?1:0)*0.85 + (v>0?0:10));
+      const g=v>0 ? 118 : 26;
       const o=(py*W+px)*4;
       img.data[o]=img.data[o+1]=img.data[o+2]=g; img.data[o+3]=255;
     }
   }
   x.putImageData(img,0,0);
-
-  // точки по тем же спиралям
-  const N=150;
+  const N=170;
   for(let i=0;i<N;i++){
-    const t=i/N;
-    const rr=0.08+t*0.92, ang=t*2.3*Math.PI;
+    const t=i/N, rr=0.08+t*0.92, ang=t*2.3*Math.PI;
     for(let k=0;k<2;k++){
       const a=ang+k*Math.PI;
-      const px=cx+Math.sin(a)*rr*R+randn()*2.2;
-      const py=cy+Math.cos(a)*rr*R+randn()*2.2;
-      x.beginPath(); x.arc(px,py,2.6,0,Math.PI*2);
+      const px=cx+Math.sin(a)*rr*R+randn()*2.4;
+      const py=cy+Math.cos(a)*rr*R+randn()*2.4;
+      x.beginPath(); x.arc(px,py,3,0,Math.PI*2);
       x.fillStyle=k?"#ffffff":"#0d0d0d"; x.fill();
-      x.lineWidth=1;
-      x.strokeStyle=k?"rgba(0,0,0,.7)":"rgba(255,255,255,.6)";
+      x.lineWidth=1.1;
+      x.strokeStyle=k?"rgba(0,0,0,.7)":"rgba(255,255,255,.65)";
       x.stroke();
     }
   }
 })();
 
-/* ---- карточка 2: рукописная цифра, ужатая до сетки 14x14 ---- */
+/* ---- рукописная цифра, ужатая до сетки ---- */
 (function(){
   const c=document.getElementById("prevB"), x=c.getContext("2d");
   const W=c.width, H=c.height;
   x.fillStyle="#050505"; x.fillRect(0,0,W,H);
 
-  // рисуем «от руки» тройку на вспомогательном холсте
-  const S=140;
+  const S=150;
   const t=document.createElement("canvas"); t.width=t.height=S;
   const tc=t.getContext("2d");
   tc.fillStyle="#000"; tc.fillRect(0,0,S,S);
-  tc.strokeStyle="#fff"; tc.lineWidth=13; tc.lineCap="round"; tc.lineJoin="round";
+  tc.strokeStyle="#fff"; tc.lineWidth=14; tc.lineCap="round"; tc.lineJoin="round";
   tc.beginPath(); tc.arc(S*0.5,S*0.33,S*0.20,-Math.PI*0.75,Math.PI*0.42); tc.stroke();
   tc.beginPath(); tc.arc(S*0.5,S*0.68,S*0.23,-Math.PI*0.58,Math.PI*0.72); tc.stroke();
 
-  // ужимаем до 14x14 и рисуем крупными клетками — «что видит сеть»
-  const G=14, cell=Math.min(W,H)/(G+3);
+  const G=14, cell=Math.min(W,H)/(G+2.4);
   const ox=(W-cell*G)/2, oy=(H-cell*G)/2;
-  const px=tc.getImageData(0,0,S,S).data;
-  const step=S/G;
+  const px=tc.getImageData(0,0,S,S).data, step=S/G;
   for(let gy=0;gy<G;gy++){
     for(let gx=0;gx<G;gx++){
-      let sum=0, cnt=0;
+      let sum=0,cnt=0;
       for(let sy=Math.floor(gy*step); sy<Math.floor((gy+1)*step); sy++)
         for(let sx=Math.floor(gx*step); sx<Math.floor((gx+1)*step); sx++){
           sum+=px[(sy*S+sx)*4]; cnt++;
         }
       const v=sum/Math.max(cnt,1)/255;
-      const g=Math.round(14+(238-14)*v);
+      const g=Math.round(14+(240-14)*v);
       x.fillStyle="rgb("+g+","+g+","+g+")";
-      x.fillRect(ox+gx*cell+0.6, oy+gy*cell+0.6, cell-1.2, cell-1.2);
+      x.fillRect(ox+gx*cell+0.7, oy+gy*cell+0.7, cell-1.4, cell-1.4);
     }
   }
 })();
