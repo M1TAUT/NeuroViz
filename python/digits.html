@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DIGITS — распознавание цифр</title>
+<style>
+  :root{
+    --bg:#000; --panel:#0a0a0a; --line:#1b1b1b; --line2:#2c2c2c;
+    --tx:#f2f2f2; --dim:#666; --dim2:#9b9b9b;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0; background:var(--bg); color:var(--tx); overflow:hidden;
+    font:13px/1.45 -apple-system,"Segoe UI",Inter,system-ui,sans-serif; -webkit-font-smoothing:antialiased}
+  .app{display:grid; grid-template-rows:auto minmax(0,1fr); gap:10px; padding:10px; height:100%}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:14px}
+  .cap{font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--dim); font-weight:700}
+  .num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+
+  .top{display:flex; align-items:center; gap:16px; padding:10px 16px; flex-wrap:wrap}
+  .brand{display:flex; align-items:center; gap:10px}
+  .brand i{width:10px; height:10px; border-radius:50%; background:#fff}
+  .brand b{font-size:13px; font-weight:800; letter-spacing:.22em}
+  .sep{width:1px; height:28px; background:var(--line2)}
+  .play{width:44px; height:44px; border-radius:50%; cursor:pointer; background:#fff; color:#000;
+    border:1px solid #fff; display:grid; place-items:center; transition:.12s}
+  .play.on{background:transparent; color:#fff; border-color:var(--line2)}
+  .play:hover{background:#d8d8d8; color:#000; border-color:#d8d8d8}
+  .play:disabled{opacity:.3; cursor:default}
+  .play svg{width:16px; height:16px; fill:currentColor}
+  .ico{width:38px; height:38px; border-radius:11px; cursor:pointer; color:var(--dim2);
+    background:transparent; border:1px solid var(--line2); display:grid; place-items:center; transition:.12s}
+  .ico:hover{color:#fff; border-color:#555; background:#141414}
+  .ico svg{width:15px; height:15px; fill:currentColor}
+  .stat b{font-size:21px; font-weight:700; display:block; margin-top:-1px}
+  .stats{display:flex; gap:22px; margin-left:auto; align-items:center}
+  .backlink{color:var(--dim2); text-decoration:none; border:1px solid var(--line2);
+    border-radius:9px; padding:8px 13px; font-size:12px; transition:.12s}
+  .backlink:hover{background:#fff; color:#000; border-color:#fff}
+  .badge{font-family:var(--mono); font-size:10px; color:var(--dim);
+    border:1px solid var(--line2); border-radius:6px; padding:3px 8px}
+
+  .main{display:grid; grid-template-columns:300px minmax(0,1fr) 264px; gap:10px; min-height:0}
+  .col{display:flex; flex-direction:column; min-height:0}
+
+  .pad{padding:15px 14px; display:flex; flex-direction:column; gap:14px; overflow-y:auto}
+  .drawwrap{border:1px solid var(--line2); border-radius:12px; overflow:hidden; line-height:0; align-self:center}
+  #draw{display:block; cursor:crosshair; touch-action:none; background:#050505}
+  .btn{width:100%; background:transparent; border:1px solid var(--line2); border-radius:10px; padding:10px;
+    color:var(--tx); font:inherit; font-size:12px; cursor:pointer; transition:.12s}
+  .btn:hover{background:#fff; color:#000; border-color:#fff}
+  .seen{display:flex; align-items:center; gap:14px}
+  .seen canvas{width:98px; height:98px; image-rendering:pixelated; border:1px solid var(--line2); border-radius:8px; display:block}
+  .seen p{margin:0; font-size:11.5px; color:var(--dim2); line-height:1.5}
+
+  .stage{padding:14px; display:flex; flex-direction:column; min-height:0; gap:11px}
+  .stagehead{display:flex; align-items:baseline; gap:12px}
+  #feats{flex:1; min-height:0; width:100%; display:block}
+
+  .out{padding:15px 14px; display:flex; flex-direction:column; gap:12px; min-height:0}
+  .bars{display:flex; flex-direction:column; gap:5px}
+  .bar{display:grid; grid-template-columns:16px 1fr 42px; gap:9px; align-items:center}
+  .bar .d{font-family:var(--mono); font-size:14px; font-weight:700; color:var(--dim2); text-align:center}
+  .bar .t{height:16px; background:#141414; border-radius:4px; overflow:hidden; border:1px solid var(--line)}
+  .bar .f{height:100%; background:#4a4a4a; width:0%; transition:width .12s linear}
+  .bar .v{font-family:var(--mono); font-size:10.5px; color:var(--dim); text-align:right; font-variant-numeric:tabular-nums}
+  .bar.win .d,.bar.win .v{color:#fff}
+  .bar.win .f{background:#fff}
+  .verdict{display:flex; align-items:baseline; gap:12px; border-top:1px solid var(--line); padding-top:12px}
+  .verdict b{font-family:var(--mono); font-size:52px; font-weight:700; line-height:1}
+  .verdict span{font-size:12px; color:var(--dim2)}
+  .lossbox{position:relative; flex:1; min-height:56px; border-top:1px solid var(--line); padding-top:10px}
+  #curve{position:absolute; left:0; right:0; bottom:0; top:22px; width:100%; display:block}
+  .hint{font-size:11px; color:var(--dim); line-height:1.55; margin:0}
+
+  /* экран «сервер не запущен» */
+  #offline{
+    position:fixed; inset:0; background:rgba(0,0,0,.93); z-index:50;
+    display:none; place-items:center; padding:24px;
+  }
+  #offline.show{display:grid}
+  .offbox{max-width:560px; display:flex; flex-direction:column; gap:16px; text-align:left}
+  .offbox h2{margin:0; font-size:22px; font-weight:750; letter-spacing:-.02em}
+  .offbox p{margin:0; color:var(--dim2); font-size:14.5px; line-height:1.6}
+  .offbox pre{margin:0; background:#0d0d0d; border:1px solid var(--line2); border-radius:10px;
+    padding:14px 16px; font-family:var(--mono); font-size:13px; color:#fff; overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="panel top">
+    <div class="brand"><i></i><b>DIGITS</b></div>
+    <div class="sep"></div>
+    <button class="play" id="run" title="Пробел">
+      <svg id="playIcon" viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z"/></svg>
+    </button>
+    <button class="ico" id="reset" title="Сброс весов">
+      <svg viewBox="0 0 16 16"><path d="M8 2.6a5.4 5.4 0 1 0 5.28 6.5h-1.7A3.75 3.75 0 1 1 8 4.25V6.6l3.3-2.3L8 2v.6z"/></svg>
+    </button>
+
+    <div class="stats">
+      <span class="badge">сеть считается на Python</span>
+      <div class="stat"><span class="cap">Эпоха</span><b class="num" id="epochV">0</b></div>
+      <div class="stat"><span class="cap">Ошибка</span><b class="num" id="lossV">—</b></div>
+      <div class="stat"><span class="cap">Точность на тесте</span><b class="num" id="accV">—</b></div>
+      <a class="backlink" href="index.html">← главная</a>
+    </div>
+  </header>
+
+  <div class="main">
+
+    <aside class="panel col pad">
+      <div class="cap">Нарисуй цифру</div>
+      <div class="drawwrap"><canvas id="draw" width="252" height="252"></canvas></div>
+      <button class="btn" id="clear">Очистить</button>
+      <div class="seen">
+        <canvas id="seen" width="14" height="14"></canvas>
+        <p><b>Что уходит на сервер.</b> Рисунок обрезается по краям, масштабируется и центруется по центру тяжести — ровно так же подготовлены обучающие картинки.</p>
+      </div>
+      <p class="hint" id="hint">Нажми пуск вверху, чтобы обучить сеть. Пока веса случайные, ответы будут случайными.</p>
+    </aside>
+
+    <section class="panel col stage">
+      <div class="stagehead">
+        <span class="cap">Что выучил первый слой</span>
+        <span class="cap num" id="featInfo" style="margin-left:auto"></span>
+      </div>
+      <canvas id="feats"></canvas>
+      <p class="hint">Каждый квадрат — веса одного нейрона, разложенные обратно в картинку 14×14. Светлое — пиксели, которые нейрон ищет, тёмное — которые ему мешают. По ходу обучения из шума проступают штрихи и дуги.</p>
+    </section>
+
+    <aside class="panel col out">
+      <div class="cap">Ответ сети</div>
+      <div class="bars" id="bars"></div>
+      <div class="verdict"><b class="num" id="best">—</b><span id="bestSub">нарисуй цифру слева</span></div>
+      <div class="lossbox">
+        <span class="cap">Точность по эпохам</span>
+        <canvas id="curve"></canvas>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<div id="offline">
+  <div class="offbox">
+    <h2>Сервер не запущен</h2>
+    <p>Нейросеть считается на Python, поэтому страница сама по себе ничего не умеет —
+       ей нужен сервер. Запусти его в терминале из папки проекта:</p>
+    <pre>python3 python/server.py</pre>
+    <p>Потом открой <b>http://localhost:8000</b> и вернись сюда.
+       Если открываешь файл двойным кликом, страница работать не будет: адрес должен
+       начинаться с <b>localhost</b>, а не с <b>file://</b></p>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+
+/* ============================================================
+   Здесь нет ни одной строчки нейросети. Вся математика — в
+   python/server.py. Эта страница только рисует и отправляет
+   действия пользователя.
+   ============================================================ */
+
+async function api(путь, тело){
+  const r = await fetch(путь, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(тело || {})
+  });
+  if(!r.ok) throw new Error("сервер ответил " + r.status);
+  return r.json();
+}
+function отБазы64(s){
+  const bin = atob(s), a = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) a[i] = bin.charCodeAt(i);
+  return a;
+}
+function сервералНет(e){
+  console.error(e);
+  $("#offline").classList.add("show");
+  running = false;
+}
+
+let SIDE = 14, HID = 64;
+let epoch = 0, running = false, hist = [];
+let w1bytes = null;
+
+/* ======================= рисование ======================= */
+const dc=$("#draw"), dctx=dc.getContext("2d",{willReadFrequently:true});
+const DW=dc.width;
+let drawing=false, hasInk=false, lastPt=null;
+const seenC=$("#seen"), seenCtx=seenC.getContext("2d");
+
+function clearDraw(){
+  dctx.fillStyle="#050505"; dctx.fillRect(0,0,DW,DW);
+  hasInk=false; lastPt=null;
+  seenCtx.clearRect(0,0,SIDE,SIDE);
+  showProbs(null);
+}
+function stroke(a,b){
+  dctx.strokeStyle="#fff"; dctx.lineWidth=17;
+  dctx.lineCap="round"; dctx.lineJoin="round";
+  dctx.beginPath(); dctx.moveTo(a[0],a[1]); dctx.lineTo(b[0],b[1]); dctx.stroke();
+  hasInk=true;
+}
+const dpos=e=>{ const r=dc.getBoundingClientRect();
+  return [(e.clientX-r.left)*DW/r.width,(e.clientY-r.top)*DW/r.height]; };
+dc.addEventListener("pointerdown",e=>{ drawing=true; dc.setPointerCapture(e.pointerId);
+  lastPt=dpos(e); stroke(lastPt,lastPt); проситьОтвет(); });
+dc.addEventListener("pointermove",e=>{ if(!drawing) return;
+  const p=dpos(e); stroke(lastPt,p); lastPt=p; проситьОтвет(); });
+dc.addEventListener("pointerup",()=>{ drawing=false; проситьОтвет(true); });
+$("#clear").onclick = clearDraw;
+
+/* Подготовка рисунка остаётся здесь: это работа с холстом, которую всё равно
+   умеет только браузер. Обрезаем по краске, вписываем в 20x20, ставим центром
+   тяжести в середину 28x28 и ужимаем до 14x14 — MNIST подготовлен так же. */
+const tmp=document.createElement("canvas"); tmp.width=tmp.height=28;
+const tctx=tmp.getContext("2d",{willReadFrequently:true});
+const shiftC=document.createElement("canvas"); shiftC.width=shiftC.height=28;
+const sctx=shiftC.getContext("2d");
+let input=new Float32Array(SIDE*SIDE);
+
+function normalize(){
+  const img=dctx.getImageData(0,0,DW,DW).data;
+  let x0=1e9,y0=1e9,x1=-1,y1=-1;
+  for(let y=0;y<DW;y++) for(let x=0;x<DW;x++){
+    if(img[(y*DW+x)*4]>60){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+  }
+  if(x1<0) return false;
+  const bw=x1-x0+1, bh=y1-y0+1, sc=20/Math.max(bw,bh);
+  const nw=Math.max(1,Math.round(bw*sc)), nh=Math.max(1,Math.round(bh*sc));
+  tctx.fillStyle="#000"; tctx.fillRect(0,0,28,28);
+  tctx.imageSmoothingEnabled=true;
+  tctx.drawImage(dc,x0,y0,bw,bh,(28-nw)/2,(28-nh)/2,nw,nh);
+
+  let px=tctx.getImageData(0,0,28,28).data;
+  let mx=0,my=0,m=0;
+  for(let y=0;y<28;y++) for(let x=0;x<28;x++){
+    const v=px[(y*28+x)*4]; if(v){ mx+=x*v; my+=y*v; m+=v; }
+  }
+  if(m>0){
+    const dx=Math.round(13.5-mx/m), dy=Math.round(13.5-my/m);
+    if(dx||dy){
+      sctx.fillStyle="#000"; sctx.fillRect(0,0,28,28);
+      sctx.drawImage(tmp,dx,dy);
+      tctx.fillStyle="#000"; tctx.fillRect(0,0,28,28);
+      tctx.drawImage(shiftC,0,0);
+      px=tctx.getImageData(0,0,28,28).data;
+    }
+  }
+  for(let y=0;y<SIDE;y++) for(let x=0;x<SIDE;x++){
+    const a=px[((2*y)*28+2*x)*4],   b=px[((2*y)*28+2*x+1)*4];
+    const c=px[((2*y+1)*28+2*x)*4], d=px[((2*y+1)*28+2*x+1)*4];
+    input[y*SIDE+x]=(a+b+c+d)/1020;
+  }
+  const im=seenCtx.createImageData(SIDE,SIDE);
+  for(let i=0;i<input.length;i++){
+    const g=Math.round(input[i]*255);
+    im.data[i*4]=im.data[i*4+1]=im.data[i*4+2]=g; im.data[i*4+3]=255;
+  }
+  seenCtx.putImageData(im,0,0);
+  return true;
+}
+
+/* Ответ спрашиваем у сервера, но не на каждое движение мыши —
+   иначе на один штрих улетели бы сотни запросов. */
+let ждём=false, нужноЕщё=false;
+async function проситьОтвет(сразу){
+  if(!hasInk || !normalize()){ showProbs(null); return; }
+  if(ждём){ нужноЕщё=true; return; }
+  ждём=true;
+  try{
+    const о = await api("/api/dg/predict", {pixels: Array.from(input)});
+    showProbs(о.probs);
+  }catch(e){ сервералНет(e); }
+  ждём=false;
+  if(нужноЕщё){ нужноЕщё=false; проситьОтвет(); }
+}
+
+/* ======================= вывод ======================= */
+const barsEl=$("#bars"), barEls=[];
+for(let d=0;d<10;d++){
+  const el=document.createElement("div"); el.className="bar";
+  el.innerHTML='<span class="d">'+d+'</span><span class="t"><span class="f"></span></span><span class="v">—</span>';
+  barsEl.appendChild(el);
+  barEls.push({row:el,fill:el.querySelector(".f"),val:el.querySelector(".v")});
+}
+function showProbs(p){
+  if(!p){
+    barEls.forEach(b=>{ b.fill.style.width="0%"; b.val.textContent="—"; b.row.classList.remove("win"); });
+    $("#best").textContent="—"; $("#bestSub").textContent="нарисуй цифру слева";
+    return;
+  }
+  let best=0;
+  for(let k=1;k<10;k++) if(p[k]>p[best]) best=k;
+  barEls.forEach((b,k)=>{
+    b.fill.style.width=(p[k]*100).toFixed(1)+"%";
+    b.val.textContent=(p[k]*100).toFixed(1)+"%";
+    b.row.classList.toggle("win",k===best);
+  });
+  $("#best").textContent=best;
+  $("#bestSub").textContent="уверенность "+(p[best]*100).toFixed(0)+"%";
+}
+
+/* ---- веса первого слоя: сервер прислал их картинками ---- */
+const featC=$("#feats"), fctx=featC.getContext("2d");
+let fSize={w:1,h:1};
+function fitCanvas(c){
+  const r=c.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+  const W=Math.max(1,Math.round(r.width*dpr)), H=Math.max(1,Math.round(r.height*dpr));
+  if(c.width!==W||c.height!==H){ c.width=W; c.height=H; }
+  c.getContext("2d").setTransform(dpr,0,0,dpr,0,0);
+  return {w:r.width,h:r.height};
+}
+const tile=document.createElement("canvas"); tile.width=tile.height=SIDE;
+const tlc=tile.getContext("2d");
+function drawFeats(){
+  const {w,h}=fSize;
+  fctx.clearRect(0,0,w,h);
+  if(!w1bytes || w<10 || h<10) return;
+  const пикс=SIDE*SIDE;
+  const cols=Math.max(1,Math.round(Math.sqrt(HID*w/h)));
+  const rows=Math.ceil(HID/cols), gap=6;
+  const s=Math.min((w-gap*(cols-1))/cols,(h-gap*(rows-1))/rows);
+  const ox=(w-(s*cols+gap*(cols-1)))/2, oy=(h-(s*rows+gap*(rows-1)))/2;
+  const img=tlc.createImageData(SIDE,SIDE);
+  for(let j=0;j<HID;j++){
+    for(let i=0;i<пикс;i++){
+      const g=w1bytes[j*пикс+i];
+      img.data[i*4]=img.data[i*4+1]=img.data[i*4+2]=g; img.data[i*4+3]=255;
+    }
+    tlc.putImageData(img,0,0);
+    const cx=ox+(j%cols)*(s+gap), cy=oy+Math.floor(j/cols)*(s+gap);
+    fctx.save();
+    fctx.beginPath(); fctx.roundRect(cx,cy,s,s,4); fctx.clip();
+    fctx.imageSmoothingEnabled=true;
+    fctx.drawImage(tile,cx,cy,s,s);
+    fctx.restore();
+    fctx.beginPath(); fctx.roundRect(cx+.5,cy+.5,s-1,s-1,4);
+    fctx.lineWidth=1; fctx.strokeStyle="rgba(255,255,255,.22)"; fctx.stroke();
+  }
+  $("#featInfo").textContent=HID+" нейронов · "+SIDE+"×"+SIDE;
+}
+
+const curveC=$("#curve"), cctx=curveC.getContext("2d");
+let cSize={w:1,h:1};
+function drawCurve(){
+  const {w,h}=cSize;
+  cctx.clearRect(0,0,w,h);
+  const pad=6, W=w-pad*2, H=h-pad*2;
+  cctx.strokeStyle="#1b1b1b"; cctx.lineWidth=1;
+  for(let k=0;k<=2;k++){
+    const y=Math.round(pad+H*k/2)+.5;
+    cctx.beginPath(); cctx.moveTo(pad,y); cctx.lineTo(w-pad,y); cctx.stroke();
+  }
+  if(hist.length>1){
+    cctx.beginPath();
+    for(let i=0;i<hist.length;i++){
+      const x=pad+W*i/(hist.length-1), y=pad+H*(1-hist[i]);
+      i?cctx.lineTo(x,y):cctx.moveTo(x,y);
+    }
+    cctx.strokeStyle="#fff"; cctx.lineWidth=1.6; cctx.lineJoin="round"; cctx.stroke();
+  }
+}
+
+function применить(о){
+  if(о.epoch!==undefined) epoch=о.epoch;
+  if(о.hid) HID=о.hid;
+  if(о.side) SIDE=о.side;
+  if(о.w1) w1bytes=отБазы64(о.w1);
+  if(о.acc!==undefined && о.acc!==null){
+    hist.push(о.acc);
+    if(hist.length>600) hist.shift();
+    $("#accV").textContent=(о.acc*100).toFixed(1)+"%";
+  }
+  $("#epochV").textContent=epoch;
+  $("#lossV").textContent = (о.loss===null||о.loss===undefined) ? "—" : о.loss.toFixed(3);
+  drawFeats(); drawCurve();
+}
+
+/* ======================= цикл обучения ======================= */
+function setRunning(v){
+  running=v;
+  $("#run").classList.toggle("on",v);
+  $("#playIcon").innerHTML=v
+    ? '<rect x="3.6" y="2.5" width="3.5" height="11" rx="1.1"/><rect x="9.2" y="2.5" width="3.5" height="11" rx="1.1"/>'
+    : '<path d="M4 2.5v11l9-5.5z"/>';
+  if(v){
+    $("#hint").textContent="Сеть учится на сервере. Рисуй — ответ пересчитывается на лету.";
+    крутить();
+  }
+}
+async function крутить(){
+  while(running){
+    try{
+      применить(await api("/api/dg/step", {epochs:2}));
+      if(hasInk) проситьОтвет();
+    }catch(e){ сервералНет(e); return; }
+    await new Promise(r=>requestAnimationFrame(r));
+  }
+}
+
+$("#run").onclick = ()=> setRunning(!running);
+$("#reset").onclick = async ()=>{
+  setRunning(false);
+  hist=[];
+  try{ применить(await api("/api/dg/reset")); }catch(e){ return сервералНет(e); }
+  $("#hint").textContent="Веса сброшены. Нажми пуск, чтобы учить заново.";
+  проситьОтвет();
+};
+window.addEventListener("keydown",e=>{
+  if(e.code==="Space"){ e.preventDefault(); setRunning(!running); }
+  if(e.key==="c"||e.key==="с") clearDraw();
+});
+
+const ro=new ResizeObserver(()=>{
+  fSize=fitCanvas(featC); cSize=fitCanvas(curveC);
+  drawFeats(); drawCurve();
+});
+ro.observe(featC); ro.observe(curveC);
+
+/* ======================= старт ======================= */
+(async function(){
+  fSize=fitCanvas(featC); cSize=fitCanvas(curveC);
+  clearDraw();
+  if(location.protocol === "file:") return сервералНет(new Error("открыто как file://"));
+  try{ применить(await api("/api/dg/reset")); }
+  catch(e){ сервералНет(e); }
+})();
+</script>
+</body>
+</html>

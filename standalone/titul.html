@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Титульный лист и описание проекта</title>
+<style>
+  @page{ size:A4; margin:0 }
+  :root{
+    --ink:#111;
+    --muted:#5a5a5a;
+    --rule:#c9c9c9;
+    --serif:"Times New Roman",Times,Georgia,serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:#7a7a7a; color:var(--ink);
+    font-family:var(--serif); font-size:14pt; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .sheet{
+    width:210mm; min-height:297mm; background:#fff; margin:14px auto;
+    padding:25mm 22mm; display:flex; flex-direction:column;
+    box-shadow:0 6px 28px rgba(0,0,0,.45);
+  }
+
+  /* ---------- титульный ---------- */
+  .school{text-align:center; font-size:13pt; line-height:1.45}
+  .mid{flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:16mm; text-align:center}
+  .kind{font-size:16pt; letter-spacing:.22em; text-transform:uppercase}
+  .theme{display:flex; flex-direction:column; gap:5mm}
+  .theme .by{font-size:13pt; color:var(--muted)}
+  .theme h1{margin:0; font-size:24pt; font-weight:700; line-height:1.28}
+  .who{align-self:flex-end; width:88mm; display:flex; flex-direction:column; gap:7mm; font-size:13pt}
+  .who div{display:flex; flex-direction:column; gap:1.5mm}
+  .who span{color:var(--muted); font-size:11.5pt}
+  .fill{border-bottom:1px solid var(--ink); min-height:6mm}
+  .city{text-align:center; font-size:13pt; margin-top:14mm}
+
+  /* ---------- описание ---------- */
+  .sheet.text{font-size:13pt; line-height:1.62}
+  .sheet.text h2{
+    font-size:17pt; margin:0 0 6mm; text-align:center; font-weight:700;
+  }
+  .sheet.text h3{font-size:13.5pt; margin:8mm 0 2.5mm; font-weight:700}
+  .sheet.text p{margin:0 0 3.5mm; text-align:justify; text-indent:8mm}
+  .sheet.text p.noind{text-indent:0}
+  .sheet.text ul{margin:0 0 3.5mm; padding-left:10mm}
+  .sheet.text li{margin-bottom:1.6mm}
+  .meta{border-top:1px solid var(--rule); margin-top:auto; padding-top:4mm; font-size:11pt; color:var(--muted)}
+
+  @media print{
+    body{background:#fff}
+    .sheet{margin:0; box-shadow:none; page-break-after:always}
+    .sheet:last-child{page-break-after:auto}
+    .noprint{display:none}
+  }
+  .noprint{
+    position:fixed; right:16px; bottom:16px; background:#111; color:#fff;
+    border:0; border-radius:8px; padding:11px 18px; font:600 14px system-ui,sans-serif; cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,.4);
+  }
+</style>
+</head>
+<body>
+
+<!-- ======== СТРАНИЦА 1: титульный лист ======== -->
+<div class="sheet">
+  <div class="school">
+    Муниципальное бюджетное общеобразовательное учреждение<br>
+    «___________________________________»
+  </div>
+
+  <div class="mid">
+    <div class="kind">Индивидуальный проект</div>
+    <div class="theme">
+      <div class="by">на тему</div>
+      <h1>Нейронная сеть:<br>как машина учится узнавать</h1>
+    </div>
+  </div>
+
+  <div class="who">
+    <div><span>Выполнил(а):</span><div class="fill"></div><span>ученик(ца) ______ класса</span></div>
+    <div><span>Руководитель:</span><div class="fill"></div></div>
+  </div>
+
+  <div class="city">______________ , 2026</div>
+</div>
+
+<!-- ======== СТРАНИЦА 2: описание ======== -->
+<div class="sheet text">
+  <h2>О проекте</h2>
+
+  <h3>Актуальность</h3>
+  <p>Словосочетание «нейронная сеть» сегодня слышно ежедневно: нейросети рисуют картинки, переводят тексты, отвечают на вопросы. При этом для большинства людей это остаётся чёрным ящиком — чем-то, что просто работает, и непонятно почему. Складывается впечатление, будто внутри спрятан готовый набор правил, который кто-то заранее прописал.</p>
+  <p>На самом деле никаких записанных правил внутри нет. Есть только числа, которые машина подбирает сама, раз за разом сравнивая свой ответ с правильным. Увидеть этот процесс глазами куда полезнее, чем прочитать о нём.</p>
+
+  <h3>Цель работы</h3>
+  <p>Показать наглядно, что обучение машины — это не магия, а последовательность понятных шагов, и что каждый такой шаг можно наблюдать в реальном времени.</p>
+
+  <h3>Задачи</h3>
+  <ul>
+    <li>Разобраться, как устроена простейшая нейронная сеть и что в ней происходит при обучении.</li>
+    <li>Написать такую сеть самостоятельно, не используя готовых библиотек.</li>
+    <li>Сделать наглядную программу, где видно каждый шаг обучения.</li>
+    <li>Показать на этой программе основные явления: почему простая сеть не справляется со сложной задачей, что даёт добавление слоёв, и почему сеть может «зазубрить» примеры вместо того, чтобы понять закономерность.</li>
+  </ul>
+
+  <h3>Что сделано</h3>
+  <p>Разработана интерактивная программа из двух частей, работающая в обычном браузере.</p>
+  <p class="noind"><b>Первая часть — обучающая.</b> На экране рассыпаны точки двух видов, и сеть должна научиться их различать. Видно всё сразу: как выглядит каждый элемент сети, что именно он выучил, как между ними передаются сигналы и как граница между двумя видами точек постепенно проступает и уточняется. Сеть можно менять прямо во время работы — добавлять и убирать слои, усложнять задачу, добавлять помехи.</p>
+  <p class="noind"><b>Вторая часть — практическая.</b> Программа учится распознавать рукописные цифры. Обучение идёт на настоящих образцах человеческого почерка, а проверить результат можно сразу: нарисовать цифру мышью и посмотреть, узнает ли её машина. Здесь же видно, что именно сеть «увидела» в рисунке.</p>
+
+  <h3>Что можно наблюдать</h3>
+  <ul>
+    <li>Как из полностью случайного начального состояния постепенно появляется осмысленное поведение.</li>
+    <li>Почему одни задачи решаются мгновенно, а другие требуют более сложной сети.</li>
+    <li>Как машина, получив слишком мало примеров, начинает запоминать их наизусть вместо того, чтобы уловить общее правило — и как это можно исправить.</li>
+    <li>Что распознавание рукописного текста, которое выглядит почти человеческим умением, сводится к тем же самым действиям.</li>
+  </ul>
+
+  <h3>Практическая значимость</h3>
+  <p>Программа может использоваться на уроках информатики как наглядное пособие. Она не требует установки, интернета и каких-либо дополнительных программ: достаточно открыть файл в браузере. Всё происходящее показано на экране, а результат каждого изменения виден немедленно.</p>
+
+  <h3>Вывод</h3>
+  <p>Работа показывает, что за впечатляющими возможностями современных нейронных сетей стоит простая и полностью понятная идея: сравнить свой ответ с правильным и немного исправиться. Повторённая много тысяч раз, она даёт результат, который со стороны выглядит как способность понимать.</p>
+
+  <div class="meta">Программа написана самостоятельно, без использования готовых библиотек машинного обучения.</div>
+</div>
+
+<button class="noprint" onclick="window.print()">Печать / сохранить в PDF</button>
+</body>
+</html>

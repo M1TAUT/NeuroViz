@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NEURAL PLAYGROUND</title>
+<style>
+  :root{
+    --bg:#000;
+    --panel:#0a0a0a;
+    --panel2:#0e0e0e;
+    --line:#1b1b1b;
+    --line2:#2c2c2c;
+    --tx:#f2f2f2;
+    --dim:#666;
+    --dim2:#9b9b9b;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--tx); overflow:hidden;
+    font:13px/1.45 -apple-system,"Segoe UI",Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{display:grid; grid-template-rows:auto minmax(0,1fr); gap:10px; padding:10px; height:100%}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:14px}
+  .cap{font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--dim); font-weight:700}
+  .num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+
+  /* ================= верх ================= */
+  .top{display:flex; align-items:center; gap:16px; padding:10px 16px; flex-wrap:wrap}
+  .brand{display:flex; align-items:center; gap:10px}
+  .brand i{width:10px; height:10px; border-radius:50%; background:#fff; display:block}
+  .brand b{font-size:13px; font-weight:800; letter-spacing:.22em}
+  .sep{width:1px; height:28px; background:var(--line2)}
+  .transport{display:flex; align-items:center; gap:8px}
+  .play{
+    width:44px; height:44px; border-radius:50%; cursor:pointer;
+    background:#fff; color:#000; border:1px solid #fff;
+    display:grid; place-items:center; transition:background .12s,color .12s;
+  }
+  .play.on{background:transparent; color:#fff; border-color:var(--line2)}
+  .play:hover{background:#d8d8d8; color:#000; border-color:#d8d8d8}
+  .play svg{width:16px; height:16px; fill:currentColor}
+  .ico{
+    width:38px; height:38px; border-radius:11px; cursor:pointer; color:var(--dim2);
+    background:transparent; border:1px solid var(--line2); display:grid; place-items:center;
+    transition:.12s;
+  }
+  .ico:hover{color:#fff; border-color:#555; background:#141414}
+  .ico svg{width:15px; height:15px; fill:currentColor}
+  .epoch b{font-size:23px; font-weight:700; letter-spacing:.03em; display:block; margin-top:-1px}
+  .backlink{color:var(--dim2); text-decoration:none; border:1px solid var(--line2);
+    border-radius:9px; padding:9px 13px; font-size:12px; white-space:nowrap; transition:.12s}
+  .backlink:hover{background:#fff; color:#000; border-color:#fff}
+  .fields{display:flex; gap:12px; margin-left:auto; flex-wrap:wrap}
+  .fld{display:flex; flex-direction:column; gap:5px; min-width:94px}
+  select{
+    appearance:none;-webkit-appearance:none; width:100%;
+    background:#0f0f0f; border:1px solid var(--line2); border-radius:9px;
+    color:var(--tx); font:inherit; font-size:12px; font-family:var(--mono);
+    padding:7px 26px 7px 10px; cursor:pointer; transition:border-color .12s;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M2 4.5L6 8.5L10 4.5' stroke='%23888' stroke-width='1.7' fill='none' stroke-linecap='round'/></svg>");
+    background-repeat:no-repeat; background-position:right 8px center; background-size:12px;
+  }
+  select:hover,select:focus{outline:none; border-color:#5a5a5a}
+
+  /* ================= раскладка ================= */
+  .main{display:grid; grid-template-columns:216px minmax(0,1fr) 344px; gap:10px; min-height:0}
+  .col{display:flex; flex-direction:column; min-height:0}
+
+  /* ---- слева ---- */
+  .side{padding:15px 14px; overflow-y:auto; display:flex; flex-direction:column; gap:17px}
+  .dsgrid{display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:10px}
+  .dsgrid button{
+    aspect-ratio:1/1; border-radius:10px; cursor:pointer; padding:0; overflow:hidden;
+    background:#000; border:1px solid var(--line2); transition:border-color .12s;
+  }
+  .dsgrid button:hover{border-color:#5a5a5a}
+  .dsgrid button canvas{width:100%; height:100%; display:block}
+  .dsgrid button.on{border-color:#fff; box-shadow:0 0 0 1px #fff}
+
+  .sld{display:flex; flex-direction:column; gap:9px}
+  .sld .hd{display:flex; justify-content:space-between; align-items:center}
+  .sld .hd span{font-size:11.5px; color:var(--dim2)}
+  .sld .hd b{
+    font-family:var(--mono); font-size:11px; font-variant-numeric:tabular-nums;
+    color:#fff; border:1px solid var(--line2); background:#111;
+    padding:2px 9px; border-radius:6px; min-width:46px; text-align:center;
+  }
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; width:100%; height:18px;
+    background:transparent; cursor:pointer; display:block; margin:0;
+  }
+  /* Заливка двумя слоями: сверху непрозрачная «пустая» часть, начинающаяся ровно
+     на --p. Одним градиентом нельзя — стопы после var(--p) браузер зажимает. */
+  input[type=range]::-webkit-slider-runnable-track{
+    height:4px; border-radius:99px;
+    background:linear-gradient(90deg, #fff var(--p,50%), #232323 var(--p,50%));
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:15px; height:15px; margin-top:-5.5px; border-radius:50%;
+    background:#fff; border:3px solid #000; box-shadow:0 0 0 1px #fff;
+    transition:transform .12s;
+  }
+  input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.14)}
+  input[type=range]::-moz-range-track{height:4px; border-radius:99px; background:#232323}
+  input[type=range]::-moz-range-progress{height:4px; border-radius:99px; background:#fff}
+  input[type=range]::-moz-range-thumb{
+    width:15px; height:15px; border:3px solid #000; border-radius:50%;
+    background:#fff; box-shadow:0 0 0 1px #fff;
+  }
+
+  .btn{
+    background:transparent; border:1px solid var(--line2); border-radius:10px;
+    padding:10px; color:var(--tx); font:inherit; font-size:12px; cursor:pointer; width:100%;
+    transition:.12s;
+  }
+  .btn:hover{background:#fff; color:#000; border-color:#fff}
+
+  /* ---- центр ---- */
+  .stage{position:relative; padding:13px 13px 8px; display:flex; flex-direction:column; min-height:0; overflow:hidden}
+  .stagehead{display:flex; align-items:center; gap:12px; padding:1px 4px 10px}
+  .layerctl{display:flex; align-items:center; gap:8px}
+  .rnd{
+    width:26px; height:26px; border-radius:50%; cursor:pointer; color:var(--dim2);
+    background:transparent; border:1px solid var(--line2);
+    display:grid; place-items:center; font-size:15px; line-height:1; padding:0;
+    font-family:var(--mono); transition:.12s;
+  }
+  .rnd:hover:not(:disabled){background:#fff; border-color:#fff; color:#000}
+  .rnd:disabled{opacity:.22; cursor:default}
+  .layerctl b{font-family:var(--mono); font-size:13px; font-weight:700; min-width:15px; text-align:center}
+  #netwrap{
+    position:relative; flex:1; min-height:0; border-radius:11px; overflow:hidden;
+    background:#050505; box-shadow:inset 0 0 0 1px var(--line);
+  }
+  #net{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none}
+  #overlay{position:absolute; inset:0; pointer-events:none}
+  #overlay .nctl{position:absolute; transform:translateX(-50%); display:flex; gap:5px; pointer-events:auto}
+  #tip{
+    position:absolute; pointer-events:none; z-index:5; display:none;
+    background:#fff; color:#000; border-radius:6px;
+    padding:4px 9px; font-family:var(--mono); font-size:11px; font-weight:600; white-space:nowrap;
+    transform:translate(-50%,-155%);
+  }
+  .foot{display:flex; align-items:center; gap:15px; padding:9px 6px 2px; font-size:10.5px; color:var(--dim); flex-wrap:wrap}
+  .foot .k{
+    font-family:var(--mono); font-size:9.5px; border:1px solid var(--line2);
+    border-radius:5px; padding:2px 6px; color:var(--dim2); margin-right:6px;
+  }
+  .foot .wl{display:inline-block; width:16px; height:0; vertical-align:middle; margin-right:5px}
+
+  /* ---- справа ---- */
+  .out{padding:15px 14px; display:flex; flex-direction:column; gap:11px; min-height:0}
+  .outhead{display:flex; justify-content:space-between; align-items:baseline}
+  .outframe{border-radius:12px; overflow:hidden; line-height:0; align-self:center; box-shadow:0 0 0 1px var(--line2)}
+  #outc{display:block}
+  .metrics{display:flex; gap:8px}
+  .mc{
+    flex:1; background:#0e0e0e; border:1px solid var(--line);
+    border-radius:10px; padding:8px 10px; display:flex; flex-direction:column; gap:2px;
+  }
+  .mc span{font-size:8.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim); font-weight:700; white-space:nowrap}
+  .mc b{font-family:var(--mono); font-size:17px; font-weight:700; font-variant-numeric:tabular-nums}
+  .lossbox{position:relative; flex:1; min-height:62px}
+  #loss{position:absolute; inset:0; width:100%; height:100%; display:block}
+  .checks{display:flex; flex-direction:column; gap:2px; border-top:1px solid var(--line); padding-top:9px}
+  .chk{display:flex; align-items:center; gap:9px; font-size:11.5px; color:var(--dim2); cursor:pointer; padding:3px 0; transition:color .12s}
+  .chk:hover{color:#fff}
+  .chk input{
+    appearance:none;-webkit-appearance:none; margin:0; width:16px; height:16px; border-radius:5px;
+    border:1px solid var(--line2); background:#0d0d0d; cursor:pointer;
+    display:grid; place-items:center; transition:.12s;
+  }
+  .chk input:checked{background:#fff; border-color:#fff}
+  .chk input:checked::after{content:""; width:7px; height:4px; border-left:2px solid #000; border-bottom:2px solid #000; transform:rotate(-45deg) translateY(-1px)}
+  .scale{display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:9.5px; color:var(--dim)}
+  .scale i{flex:1; height:6px; border-radius:3px; background:linear-gradient(90deg,#101010,#767676,#e8e8e8); border:1px solid var(--line)}
+
+  #offline{position:fixed; inset:0; background:rgba(0,0,0,.93); z-index:50; display:none; place-items:center; padding:24px}
+  #offline.show{display:grid}
+  .offbox{max-width:560px; display:flex; flex-direction:column; gap:16px}
+  .offbox h2{margin:0; font-size:22px; font-weight:750; letter-spacing:-.02em}
+  .offbox p{margin:0; color:var(--dim2); font-size:14.5px; line-height:1.6}
+  .offbox pre{margin:0; background:#0d0d0d; border:1px solid var(--line2); border-radius:10px;
+    padding:14px 16px; font-family:var(--mono); font-size:13px; color:#fff; overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="panel top">
+    <div class="brand"><i></i><b>NEURAL</b></div>
+    <div class="sep"></div>
+
+    <div class="transport">
+      <button class="play" id="run" title="Пробел">
+        <svg id="playIcon" viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z"/></svg>
+      </button>
+      <button class="ico" id="step" title="Один шаг (S)">
+        <svg viewBox="0 0 16 16"><path d="M3 2.5v11l7-5.5z"/><rect x="11" y="2.5" width="2.2" height="11" rx="1"/></svg>
+      </button>
+      <button class="ico" id="reset" title="Сброс (R)">
+        <svg viewBox="0 0 16 16"><path d="M8 2.6a5.4 5.4 0 1 0 5.28 6.5h-1.7A3.75 3.75 0 1 1 8 4.25V6.6l3.3-2.3L8 2v.6z"/></svg>
+      </button>
+    </div>
+
+    <div class="epoch"><span class="cap">Эпоха</span><b class="num" id="epochV">000,000</b></div>
+
+    <div class="fields">
+      <div class="fld"><span class="cap">Скорость</span><select id="lr"></select></div>
+      <div class="fld"><span class="cap">Активация</span>
+        <select id="act">
+          <option value="tanh">Tanh</option><option value="relu">ReLU</option>
+          <option value="sigmoid">Sigmoid</option><option value="linear">Linear</option>
+        </select></div>
+      <div class="fld"><span class="cap">Регуляризация</span>
+        <select id="reg"><option value="none">Нет</option><option value="L1">L1</option><option value="L2">L2</option></select></div>
+      <div class="fld"><span class="cap">Коэф. рег.</span><select id="regRate"></select></div>
+    </div>
+    <a class="backlink" href="index.html">← главная</a>
+  </header>
+
+  <div class="main">
+
+    <aside class="panel col side">
+      <div>
+        <div class="cap">Набор данных</div>
+        <div class="dsgrid" id="ds">
+          <button data-v="circle" title="Кольцо в кольце"></button>
+          <button data-v="xor"    title="Исключающее ИЛИ"></button>
+          <button data-v="gauss"  title="Два пятна"></button>
+          <button data-v="spiral" title="Две спирали"></button>
+        </div>
+      </div>
+
+      <div class="sld">
+        <div class="hd"><span>Обучающих</span><b id="ratioV">50%</b></div>
+        <input type="range" id="ratio" min="10" max="90" step="10" value="50">
+      </div>
+      <div class="sld">
+        <div class="hd"><span>Шум</span><b id="noiseV">0</b></div>
+        <input type="range" id="noise" min="0" max="40" step="5" value="0">
+      </div>
+      <div class="sld">
+        <div class="hd"><span>Батч</span><b id="batchV">10</b></div>
+        <input type="range" id="batch" min="1" max="25" step="3" value="10">
+      </div>
+
+      <button class="btn" id="regen">Перегенерировать</button>
+      <div class="scale"><span>класс 0</span><i></i><span>класс 1</span></div>
+    </aside>
+
+    <section class="panel col stage">
+      <div class="stagehead">
+        <div class="cap">Признаки</div>
+        <div class="layerctl" style="margin-left:auto">
+          <button class="rnd" id="layMinus">−</button>
+          <b id="layN">2</b>
+          <button class="rnd" id="layPlus">+</button>
+          <span class="cap" id="layCap">скрытых слоя</span>
+        </div>
+      </div>
+      <div id="netwrap">
+        <canvas id="net"></canvas>
+        <div id="overlay"></div>
+        <div id="tip"></div>
+      </div>
+      <div class="foot">
+        <span><i class="k">тяни</i>нейрон мышкой</span>
+        <span><i class="k">клик</i>признак вкл/выкл</span>
+        <span><i class="wl" style="border-top:2px solid #fff"></i>вес &gt; 0</span>
+        <span><i class="wl" style="border-top:2px dashed #7a7a7a"></i>вес &lt; 0</span>
+        <span id="perfNote" style="display:none; margin-left:auto; color:#8a8a8a"></span>
+      </div>
+    </section>
+
+    <aside class="panel col out">
+      <div class="outhead"><span class="cap" id="outCap">Выход сети</span>
+        <span class="cap num" id="outSub"></span></div>
+      <div class="outframe"><canvas id="outc"></canvas></div>
+
+      <div class="metrics">
+        <div class="mc"><span>Ошибка обуч.</span><b id="lossTrain">—</b></div>
+        <div class="mc"><span>Ошибка тест.</span><b id="lossTest">—</b></div>
+        <div class="mc"><span>Точность</span><b id="accV">—</b></div>
+      </div>
+      <div class="lossbox"><canvas id="loss"></canvas></div>
+
+      <div class="checks">
+        <label class="chk"><input type="checkbox" id="showTest">Показывать тестовые данные</label>
+        <label class="chk"><input type="checkbox" id="discretize">Дискретизировать выход</label>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<div id="offline">
+  <div class="offbox">
+    <h2>Сервер не запущен</h2>
+    <p>Нейросеть считается на Python, поэтому странице нужен сервер.
+       Запусти его в терминале из папки проекта:</p>
+    <pre>python3 python/server.py</pre>
+    <p>Потом открой <b>http://localhost:8000</b> и вернись сюда.
+       Если открыть файл двойным кликом, работать не будет: адрес должен
+       начинаться с <b>localhost</b>, а не с <b>file://</b></p>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+function randn(){ let u=0,v=0; while(!u)u=Math.random(); while(!v)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+const clamp=(v,a,b)=> v<a?a:v>b?b:v;
+
+/* ==================== состояние ====================
+   Здесь нет ни одной строчки нейросети. Вся математика — в python/server.py.
+   Эта страница только рисует то, что пришло с сервера, и отправляет обратно
+   действия пользователя. */
+
+const ПРИЗНАКИ=["X\u2081","X\u2082","X\u2081\u00b2","X\u2082\u00b2","X\u2081X\u2082","sin\u03c0X\u2081","sin\u03c0X\u2082"];
+let featOn=[true,true,false,false,false,false,false];
+const activeIdxs=()=>{ const a=[]; featOn.forEach((v,i)=>{ if(v) a.push(i); }); return a; };
+
+let hiddenLayers=[4,2], dataset="circle";
+const EXT=1.1;               // видимая область карты [-EXT, EXT]
+const LRS=[0.00001,0.0001,0.001,0.003,0.01,0.03,0.1,0.3,1,3,10];
+const RATES=[0,0.001,0.003,0.01,0.03,0.1,0.3,1,3,10];
+let points=[];                       // {x,y,c,test} — приходят с сервера
+let arch=[2,4,2,1], weights=[];      // веса для толщины линий
+let RES=72, MINI=24;
+let outGrid=null, hiddenThumbs=[], featThumbs=[];
+let hoverGrid=null;                  // карта наведённого нейрона в полном разрешении
+let epoch=0, lossTrain=NaN, lossTest=NaN, acc=NaN, lossHist=[];
+let running=false, занято=false;
+
+async function api(путь, тело){
+  const r=await fetch(путь,{method:"POST",headers:{"Content-Type":"application/json"},
+                            body:JSON.stringify(тело||{})});
+  if(!r.ok) throw new Error("сервер ответил "+r.status);
+  return r.json();
+}
+function отБазы64(s){
+  const bin=atob(s), a=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) a[i]=bin.charCodeAt(i);
+  return a;
+}
+function сервераНет(e){
+  console.error(e);
+  document.getElementById("offline").classList.add("show");
+  running=false;
+}
+function параметры(){
+  return {
+    dataset, features:featOn, hidden:hiddenLayers,
+    act:$("#act").value, noise:+$("#noise").value, ratio:+$("#ratio").value,
+    batch:+$("#batch").value, lr:+$("#lr").value,
+    reg:$("#reg").value, regRate:+$("#regRate").value
+  };
+}
+function принять(о){
+  if(о.arch) arch=о.arch;
+  if(о.weights) weights=о.weights;
+  if(о.res){ RES=о.res; MINI=о.mini; }
+  if(о.out) outGrid=отБазы64(о.out);
+  if(о.hidden!==undefined){
+    const b=отБазы64(о.hidden), к=MINI*MINI;
+    hiddenThumbs=[];
+    for(let i=0;i+к<=b.length;i+=к) hiddenThumbs.push(b.subarray(i,i+к));
+  }
+  if(о.feats){
+    const b=отБазы64(о.feats), к=MINI*MINI;
+    featThumbs=[];
+    for(let i=0;i+к<=b.length;i+=к) featThumbs.push(b.subarray(i,i+к));
+  }
+  if(о.points){
+    points=о.points.x.map((x,i)=>({x, y:о.points.y[i], c:о.points.c[i], test:о.points.test[i]}));
+  }
+  epoch=о.epoch; lossTrain=о.lossTrain; lossTest=о.lossTest; acc=о.acc;
+  if(о.lossTrain!=null){ lossHist.push([о.lossTrain, о.lossTest]);
+    if(lossHist.length>4000) lossHist.shift(); }
+}
+async function rebuild(newData){
+  setRunning(false);
+  lossHist=[]; nodesCols=null; thumbs=null; hoverGrid=null;
+  try{
+    принять(await api("/api/pg/reset", Object.assign(параметры(), {newData:!!newData})));
+  }catch(e){ return сервераНет(e); }
+  syncLayerUI(); drawAll(performance.now());
+}
+
+/* ==================== отрисовка ==================== */
+const netC=$("#net"),nctx=netC.getContext("2d");
+const outC=$("#outc"),octx=outC.getContext("2d");
+const lossC=$("#loss"),lctx=lossC.getContext("2d");
+const bigC=document.createElement("canvas"); bigC.width=bigC.height=RES;
+const bctx=bigC.getContext("2d"); const bimg=bctx.createImageData(RES,RES);
+
+/* Шкала чисто в серых: класс 0 — тёмный край, класс 1 — светлый.
+   Для миниатюр берём весь диапазон, для большой карты — сжатый и тёмный,
+   иначе точки (белые и почти чёрные) сливаются с собственной областью. */
+function ramp(v,lo,hi){
+  const t=(clamp(v,-1,1)+1)/2;
+  const g=Math.round(lo+(hi-lo)*t);
+  return [g,g,g];
+}
+const NODE_LO=14, NODE_HI=234;   // миниатюры нейронов — весь диапазон
+/* Карта выхода: тёмный край не в самый ноль. Иначе тёмные точки класса 0,
+   лежащие в своей же тёмной зоне, различимы только по толстой белой обводке,
+   и вся выборка превращается в сплошную белую верёвку. */
+const OUT_LO=26,  OUT_HI=146;
+// нейроны нормируем каждый по своему максимуму — иначе ReLU-карты чёрные
+function scaleOf(arr){
+  let m=1e-6;
+  for(let i=0;i<arr.length;i++){ const a=Math.abs(arr[i]); if(a>m) m=a; }
+  return 1/m;
+}
+
+/* Миниатюры кэшируем: граф перерисовывается каждый кадр ради импульсов,
+   а сами карты меняются только вместе с grids. */
+let thumbs=null;
+function buildThumbs(){
+  // Сервер прислал каждую карту готовым набором байт 0..255 (MINI x MINI).
+  // Наше дело — разложить их по маленьким канвасам, чтобы потом просто
+  // шлёпать через drawImage.
+  const L=arch.length;
+  thumbs=[];
+  const сделать=(байты)=>{
+    const cv=document.createElement("canvas"); cv.width=cv.height=MINI;
+    const cx=cv.getContext("2d"), img=cx.createImageData(MINI,MINI);
+    for(let i=0;i<MINI*MINI;i++){
+      const g=байты?байты[i]:20;
+      img.data[i*4]=img.data[i*4+1]=img.data[i*4+2]=g; img.data[i*4+3]=255;
+    }
+    cx.putImageData(img,0,0); return cv;
+  };
+  // входная колонка — карты признаков
+  thumbs.push(featThumbs.map(сделать));
+  // скрытые слои — по порядку, как сервер их сложил
+  let п=0;
+  for(let l=1;l<L-1;l++){
+    const ряд=[];
+    for(let j=0;j<arch[l];j++) ряд.push(сделать(hiddenThumbs[п++]));
+    thumbs.push(ряд);
+  }
+  // выход — ужимаем полную карту до миниатюры
+  thumbs.push([сделать(уменьшить(outGrid))]);
+}
+function уменьшить(полная){
+  if(!полная) return null;
+  const шаг=RES/MINI, out=new Uint8Array(MINI*MINI);
+  for(let y=0;y<MINI;y++) for(let x=0;x<MINI;x++)
+    out[y*MINI+x]=полная[(y*шаг|0)*RES+(x*шаг|0)];
+  return out;
+}
+
+const BODY_FONT=getComputedStyle(document.body).fontFamily;
+
+let sizeChanged=false;
+function fit(c){
+  const r=c.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  const W=Math.max(1,Math.round(r.width*dpr)),H=Math.max(1,Math.round(r.height*dpr));
+  if(c.width!==W||c.height!==H){ c.width=W; c.height=H; sizeChanged=true; }
+  c.getContext("2d").setTransform(dpr,0,0,dpr,0,0);
+  return {w:r.width,h:r.height};
+}
+let nSize={w:1,h:1},oSize={w:1,h:1},lSize={w:1,h:1};
+function fitAll(){
+  nSize=fit(netC);
+  const host=$(".out"),cs=getComputedStyle(host);
+  const availW=host.getBoundingClientRect().width-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+  const s=clamp(Math.floor(availW),80,316);
+  outC.style.width=s+"px"; outC.style.height=s+"px";
+  oSize=fit(outC); lSize=fit(lossC);
+}
+
+/* ============ граф: раскладка и физика ============
+   Узлы тянутся пружиной к своему месту (hx,hy), а связанные слегка
+   подтягиваются за смещением соседа — потянешь один, вся сеть шевелится
+   как желе, отпустишь — вернётся. */
+function netLayout(){
+  const {w,h}=nSize;
+  const колонки=[ПРИЗНАКИ.length,...hiddenLayers,1],L=колонки.length;
+  const padL=88,padR=46,padT=32,padB=26;
+  const maxN=Math.max(...колонки),availH=h-padT-padB;
+  const s=clamp(Math.floor(availH/maxN)-9,16,52);
+  const gap=clamp(Math.floor((availH-maxN*s)/Math.max(1,maxN-0.001)),6,18);
+  const innerW=w-padL-padR;
+  const cols=колонки.map((n,l)=>{
+    const x=padL+(L===1?0:innerW*l/(L-1));
+    const tot=n*s+(n-1)*gap,y0=padT+(availH-tot)/2;
+    const nodes=[];
+    for(let i=0;i<n;i++) nodes.push({cx:x,cy:y0+i*(s+gap)+s/2});
+    return {x,n,nodes};
+  });
+  return {cols,s};
+}
+let nodesCols=null,adj=[],nodeSize=30,dragging=null,dragMoved=0;
+function syncNodes(lay){
+  const fresh=!nodesCols||nodesCols.length!==lay.cols.length||
+              nodesCols.some((c,l)=>c.length!==lay.cols[l].n);
+  if(fresh){
+    nodesCols=lay.cols.map((c,l)=>c.nodes.map((nd,i)=>
+      ({x:nd.cx,y:nd.cy,vx:0,vy:0,hx:nd.cx,hy:nd.cy,l,i})));
+  } else {
+    lay.cols.forEach((c,l)=>c.nodes.forEach((nd,i)=>{
+      const n=nodesCols[l][i]; n.hx=nd.cx; n.hy=nd.cy;
+    }));
+  }
+  const ai=activeIdxs();
+  adj=nodesCols.map(c=>c.map(()=>[]));
+  for(let l=0;l<weights.length;l++)
+    for(let j=0;j<(weights[l][0]||[]).length;j++)
+      for(let i=0;i<weights[l].length;i++){
+        const ci=l===0?ai[i]:i;
+        if(nodesCols[l][ci]&&nodesCols[l+1][j]){
+          adj[l][ci].push(nodesCols[l+1][j]);
+          adj[l+1][j].push(nodesCols[l][ci]);
+        }
+      }
+  nodeSize=lay.s;
+}
+const K_HOME=0.055,K_LINK=0.07,DAMP=0.86;
+function physicsStep(){
+  if(!nodesCols) return false;
+  let energy=0;
+  for(let l=0;l<nodesCols.length;l++)
+    for(let i=0;i<nodesCols[l].length;i++){
+      const n=nodesCols[l][i];
+      if(n===dragging){ n.vx=0; n.vy=0; continue; }
+      let fx=(n.hx-n.x)*K_HOME, fy=(n.hy-n.y)*K_HOME;
+      const nb=adj[l][i];
+      if(nb&&nb.length){
+        let sx=0,sy=0;
+        for(const m of nb){ sx+=m.x-m.hx; sy+=m.y-m.hy; }
+        fx+=(sx/nb.length-(n.x-n.hx))*K_LINK;
+        fy+=(sy/nb.length-(n.y-n.hy))*K_LINK;
+      }
+      n.vx=(n.vx+fx)*DAMP; n.vy=(n.vy+fy)*DAMP;
+      n.x+=n.vx; n.y+=n.vy;
+      energy+=n.vx*n.vx+n.vy*n.vy+(n.x-n.hx)**2+(n.y-n.hy)**2;
+    }
+  if(energy<0.02&&!dragging){
+    for(const c of nodesCols) for(const n of c){ n.x=n.hx; n.y=n.hy; n.vx=n.vy=0; }
+    return false;
+  }
+  return true;
+}
+
+let hoverNode=null,hoverLink=null,links=[];
+
+function drawNet(now){
+  const {w,h}=nSize;
+  nctx.clearRect(0,0,w,h);
+  const lay=netLayout();
+  syncNodes(lay);
+  if(!thumbs) buildThumbs();
+  const s=lay.s,L=nodesCols.length,ai=activeIdxs();
+  const t=(now||0)/1000;
+
+  // ---------- связи: толщина ~ |w|, положительные сплошные, отрицательные пунктиром ----------
+  links=[];
+  let mx=1e-6;
+  for(const слой of weights) for(const строка of слой) for(const v of строка) mx=Math.max(mx,Math.abs(v));
+  nctx.lineCap="butt";
+  for(let l=0;l<weights.length;l++)
+    for(let j=0;j<(weights[l][0]||[]).length;j++)
+      for(let i=0;i<weights[l].length;i++){
+        const v=weights[l][i][j],k=Math.abs(v)/mx;
+        const a=nodesCols[l][l===0?ai[i]:i],b=nodesCols[l+1][j];
+        const x1=a.x+s/2,y1=a.y,x2=b.x-s/2,y2=b.y;
+        links.push({x1,y1,x2,y2,v,l,i,j});
+        const hot=hoverLink&&hoverLink.l===l&&hoverLink.i===i&&hoverLink.j===j;
+        const tone=v>=0?255:122;
+        nctx.setLineDash(v>=0?[]:[4,3]);
+        nctx.beginPath(); nctx.moveTo(x1,y1); nctx.lineTo(x2,y2);
+        nctx.lineWidth=hot?2.6:0.5+k*2.4;
+        nctx.strokeStyle=hot?"#fff":`rgba(${tone},${tone},${tone},${0.1+k*0.72})`;
+        nctx.stroke();
+
+        // бегущий импульс — только на заметных весах, тускло
+        if(k>0.32){
+          const phase=((l*97+i*31+j*17)%100)/100;
+          const u=(t*0.4+phase)%1;
+          const px=x1+(x2-x1)*u, py=y1+(y2-y1)*u;
+          nctx.setLineDash([]);
+          nctx.beginPath(); nctx.arc(px,py,1.5+k,0,Math.PI*2);
+          nctx.fillStyle=`rgba(255,255,255,${0.25+k*0.45})`;
+          nctx.fill();
+        }
+      }
+  nctx.setLineDash([]);
+
+  // ---------- узлы ----------
+  const outL=L-1;
+  for(let l=0;l<L;l++)
+    for(let i=0;i<nodesCols[l].length;i++){
+      const n=nodesCols[l][i];
+      const x=n.x-s/2,y=n.y-s/2;
+      const off=l===0&&!featOn[i];
+      const on=hoverNode&&hoverNode.l===l&&hoverNode.i===i;
+      const grab=dragging===n;
+      nctx.save();
+      nctx.globalAlpha=off?0.2:1;
+      nctx.beginPath(); nctx.roundRect(x,y,s,s,5); nctx.clip();
+      nctx.imageSmoothingEnabled=true;
+      nctx.drawImage(thumbs[l][i],x,y,s,s);
+      nctx.restore();
+      nctx.beginPath(); nctx.roundRect(x+.5,y+.5,s-1,s-1,5);
+      nctx.lineWidth=(on||grab)?2:1;
+      nctx.strokeStyle=(on||grab)?"#fff":(off?"rgba(255,255,255,.14)":"rgba(255,255,255,.32)");
+      nctx.stroke();
+    }
+
+  // ---------- подписи ----------
+  nctx.font="600 11.5px "+BODY_FONT;
+  nctx.textAlign="right"; nctx.textBaseline="middle";
+  for(let i=0;i<nodesCols[0].length;i++){
+    nctx.fillStyle=featOn[i]?"#ededed":"#4a4a4a";
+    nctx.fillText(ПРИЗНАКИ[i], nodesCols[0][i].x-s/2-10, nodesCols[0][i].y);
+  }
+  // подпись выхода — под узлом, иначе её срезает краем панели
+  nctx.textAlign="center"; nctx.textBaseline="top";
+  nctx.font="600 10px "+BODY_FONT;
+  nctx.fillStyle="#6a6a6a";
+  nctx.fillText("выход", nodesCols[outL][0].x, nodesCols[outL][0].y+s/2+8);
+
+  positionLayerControls(lay);
+}
+
+function positionLayerControls(lay){
+  const ov=$("#overlay"),need=hiddenLayers.length;
+  while(ov.children.length>need) ov.removeChild(ov.lastChild);
+  while(ov.children.length<need){
+    const d=document.createElement("div"); d.className="nctl";
+    d.innerHTML='<button class="rnd">−</button><button class="rnd">+</button>';
+    const k=ov.children.length;
+    d.children[0].onclick=()=>{ if(hiddenLayers[k]>1){ hiddenLayers[k]--; rebuild(false);} };
+    d.children[1].onclick=()=>{ if(hiddenLayers[k]<8){ hiddenLayers[k]++; rebuild(false);} };
+    ov.appendChild(d);
+  }
+  for(let k=0;k<need;k++){
+    const el=ov.children[k];
+    el.style.left=lay.cols[k+1].x+"px"; el.style.top="0px";
+    el.children[0].disabled=hiddenLayers[k]<=1;
+    el.children[1].disabled=hiddenLayers[k]>=8;
+  }
+}
+
+function drawOut(){
+  const {w,h}=oSize;
+  const disc=$("#discretize").checked;
+  // при наведении показываем карту нейрона, иначе — выход сети
+  const байты = hoverGrid || outGrid;
+  if(!байты){ octx.clearRect(0,0,w,h); return; }
+  const d=bimg.data;
+  for(let k=0;k<RES*RES;k++){
+    let v=(байты[k]/127.5)-1;                 // сервер прислал 0..255, это -1..1
+    if(disc) v=v>0?1:-1;
+    const c=ramp(v,OUT_LO,OUT_HI);
+    d[k*4]=c[0]; d[k*4+1]=c[1]; d[k*4+2]=c[2]; d[k*4+3]=255;
+  }
+  bctx.putImageData(bimg,0,0);
+  octx.imageSmoothingEnabled=true;
+  octx.drawImage(bigC,0,0,w,h);
+
+  // Точки: класс 1 белый с тёмным ободком, класс 0 тёмный с белым — так каждая
+  // читается и на своей, и на чужой половине карты.
+  const showTest=$("#showTest").checked;
+  const px=(v,S)=>(v+EXT)/(2*EXT)*S;
+  octx.lineWidth=1;
+  for(const p of points){
+    if(p.test&&!showTest) continue;
+    const X=px(p.x,w), Y=h-px(p.y,h);
+    octx.beginPath(); octx.arc(X,Y,2.9,0,Math.PI*2);
+    octx.fillStyle=p.c?"#ffffff":"#0d0d0d";
+    octx.fill();
+    octx.strokeStyle=p.c?"rgba(0,0,0,.7)":"rgba(255,255,255,.6)";
+    octx.stroke();
+    if(p.test){
+      octx.strokeStyle="rgba(255,255,255,.26)";
+      octx.beginPath(); octx.arc(X,Y,4.5,0,Math.PI*2); octx.stroke();
+    }
+  }
+  const outL=hiddenLayers.length+1;
+  $("#outCap").textContent=hoverNode
+    ? (hoverNode.l===0?"Признак":(hoverNode.l===outL?"Выход сети":"Нейрон"))
+    : "Выход сети";
+  $("#outSub").textContent=hoverNode
+    ? (hoverNode.l===0?ПРИЗНАКИ[hoverNode.i]
+       :(hoverNode.l===outL?"":hoverNode.l+"."+(hoverNode.i+1)))
+    : "";
+}
+
+function drawLoss(){
+  const {w,h}=lSize;
+  lctx.clearRect(0,0,w,h);
+  const pad={l:2,r:2,t:7,b:7},W=w-pad.l-pad.r,H=h-pad.t-pad.b;
+  let mx=0.05;
+  for(const [a,b] of lossHist){ if(isFinite(a)&&a>mx)mx=a; if(isFinite(b)&&b>mx)mx=b; }
+  mx=Math.min(mx,3);
+  lctx.strokeStyle="#1b1b1b"; lctx.lineWidth=1;
+  for(let k=0;k<=2;k++){
+    const y=Math.round(pad.t+H*k/2)+0.5;
+    lctx.beginPath(); lctx.moveTo(pad.l,y); lctx.lineTo(w-pad.r,y); lctx.stroke();
+  }
+  if(lossHist.length>1){
+    const n=lossHist.length;
+    // тест — пунктиром, обучение — сплошной; обе белые разной яркости
+    for(const [ci,col,dash] of [[1,"#8a8a8a",[4,3]],[0,"#ffffff",[]]]){
+      lctx.setLineDash(dash);
+      lctx.beginPath();
+      for(let i=0;i<n;i++){
+        const v=Math.min(lossHist[i][ci],mx);
+        const x=pad.l+W*i/(n-1), y=pad.t+H*(1-(isFinite(v)?v:0)/mx);
+        i?lctx.lineTo(x,y):lctx.moveTo(x,y);
+      }
+      lctx.strokeStyle=col; lctx.lineWidth=1.5; lctx.lineJoin="round"; lctx.stroke();
+    }
+    lctx.setLineDash([]);
+  }
+}
+
+const fmtEpoch=n=>{ const s=String(n).padStart(6,"0"); return s.slice(0,3)+","+s.slice(3); };
+function updateStats(){
+  $("#epochV").textContent=fmtEpoch(epoch);
+  $("#lossTrain").textContent=isFinite(lossTrain)?lossTrain.toFixed(3):"—";
+  $("#lossTest").textContent=isFinite(lossTest)?lossTest.toFixed(3):"—";
+  $("#accV").textContent=isFinite(acc)?(acc*100).toFixed(1)+"%":"—";
+}
+function drawAll(t){ drawNet(t); drawOut(); drawLoss(); updateStats(); }
+
+/* ==================== цикл ==================== */
+let PULSE=true, lastNow=0, frameSamples=[], autoTuned=false;
+function watchFrames(now){
+  if(!lastNow || running || !PULSE || autoTuned){ lastNow=now; return; }
+  const dt=now-lastNow; lastNow=now;
+  if(dt<=0||dt>500) return;
+  frameSamples.push(dt);
+  if(frameSamples.length<45) return;
+  autoTuned=true;
+  frameSamples.sort((a,b)=>a-b);
+  const med=frameSamples[frameSamples.length>>1];
+  if(med>28){
+    PULSE=false;
+    const el=$("#perfNote");
+    el.textContent="импульсы выключены: "+Math.round(1000/med)+" fps — браузер рисует на процессоре · P включить";
+    el.style.display="inline";
+  }
+}
+
+/* Один «шаг» — это запрос к серверу: он обучает несколько эпох и присылает
+   обратно карты и веса. Пока ответ не пришёл, нового запроса не шлём. */
+async function шагОбучения(эпох){
+  if(занято) return;
+  занято=true;
+  try{ принять(await api("/api/pg/step", Object.assign(параметры(), {epochs:эпох}))); }
+  catch(e){ сервераНет(e); return; }
+  finally{ занято=false; }
+  thumbs=null;
+  if(hoverNode) обновитьКартуУзла();
+  drawAll(performance.now());
+}
+
+function loop(now){
+  watchFrames(now);
+  const moving=physicsStep();
+  if(running && !занято) шагОбучения(3);
+  else if(moving || PULSE) drawNet(now);
+  requestAnimationFrame(loop);
+}
+function singleStep(){ setRunning(false); шагОбучения(1); }
+function setRunning(v){
+  running=v;
+  $("#run").classList.toggle("on",v);
+  $("#playIcon").innerHTML=v
+    ? '<rect x="3.6" y="2.5" width="3.5" height="11" rx="1.1"/><rect x="9.2" y="2.5" width="3.5" height="11" rx="1.1"/>'
+    : '<path d="M4 2.5v11l9-5.5z"/>';
+}
+
+/* Карту наведённого нейрона в полном разрешении просим отдельно —
+   присылать её для всех нейронов каждый кадр было бы расточительно. */
+let картаЗанято=false;
+async function обновитьКартуУзла(){
+  if(!hoverNode || картаЗанято) return;
+  картаЗанято=true;
+  const цель={l:hoverNode.l,i:hoverNode.i};
+  try{
+    const о=await api("/api/pg/node",{layer:цель.l,index:цель.i});
+    if(hoverNode && hoverNode.l===цель.l && hoverNode.i===цель.i){
+      hoverGrid=отБазы64(о.grid); drawOut();
+    }
+  }catch(e){ /* молча: сеть могла перестроиться */ }
+  картаЗанято=false;
+}
+
+/* ==================== превью наборов ==================== */
+async function drawPreviews(){
+  let наборы;
+  try{ наборы = await api("/api/pg/previews"); }catch(e){ return; }
+  for(const b of document.querySelectorAll("#ds button")){
+    let cv=b.querySelector("canvas");
+    if(!cv){ cv=document.createElement("canvas"); cv.width=cv.height=62; b.appendChild(cv); }
+    const c=cv.getContext("2d"), д=наборы[b.dataset.v];
+    c.clearRect(0,0,62,62);
+    for(let i=0;i<д.x.length;i++){
+      const X=(д.x[i]+1.05)/2.1*62, Y=(1.05-д.y[i])/2.1*62;
+      c.beginPath(); c.arc(X,Y,1.5,0,Math.PI*2);
+      c.fillStyle=д.c[i]?"#ffffff":"#7d7d7d"; c.fill();
+    }
+  }
+}
+
+/* ==================== управление ==================== */
+function paintRange(el){
+  const mn=+el.min,mx=+el.max;
+  el.style.setProperty("--p",((el.value-mn)/(mx-mn)*100)+"%");
+}
+LRS.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; $("#lr").appendChild(o); });
+RATES.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; $("#regRate").appendChild(o); });
+$("#lr").value="0.03"; $("#regRate").value="0";
+
+function syncLayerUI(){
+  const n=hiddenLayers.length;
+  $("#layN").textContent=n;
+  $("#layCap").textContent=n===1?"скрытый слой":(n<5?"скрытых слоя":"скрытых слоёв");
+  $("#layMinus").disabled=n<=0; $("#layPlus").disabled=n>=6;
+}
+$("#ds").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  [...$("#ds").children].forEach(x=>x.classList.toggle("on",x===b));
+  dataset=b.dataset.v; rebuild(true);
+});
+$("#run").onclick=()=>setRunning(!running);
+$("#step").onclick=()=>{ setRunning(false); singleStep(); };
+$("#reset").onclick=()=>{ setRunning(false); rebuild(false); };
+$("#regen").onclick=()=>{ setRunning(false); rebuild(true); };
+$("#layMinus").onclick=()=>{ if(hiddenLayers.length>0){ hiddenLayers.pop(); rebuild(false);} };
+$("#layPlus").onclick=()=>{ if(hiddenLayers.length<6){ hiddenLayers.push(2); rebuild(false);} };
+
+for(const id of ["ratio","noise","batch"]){
+  const el=$("#"+id);
+  el.addEventListener("input",()=>{
+    paintRange(el);
+    $("#ratioV").textContent=$("#ratio").value+"%";
+    $("#noiseV").textContent=$("#noise").value;
+    $("#batchV").textContent=$("#batch").value;
+    if(id!=="batch"){ setRunning(false); rebuild(true); }
+  });
+}
+$("#act").onchange=()=>rebuild(false);
+$("#showTest").onchange=$("#discretize").onchange=()=>drawOut();
+
+/* ---- мышь: тянем узлы, наводимся, переключаем признаки ---- */
+const localXY=e=>{ const r=netC.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top]; };
+function nodeAt(mx,my){
+  if(!nodesCols) return null;
+  const s=nodeSize;
+  for(let l=0;l<nodesCols.length;l++)
+    for(let i=0;i<nodesCols[l].length;i++){
+      const n=nodesCols[l][i];
+      if(Math.abs(mx-n.x)<=s/2&&Math.abs(my-n.y)<=s/2) return n;
+    }
+  return null;
+}
+netC.addEventListener("pointerdown",e=>{
+  const [mx,my]=localXY(e);
+  const n=nodeAt(mx,my); if(!n) return;
+  dragging=n; dragMoved=0;
+  netC.setPointerCapture(e.pointerId);
+  netC.style.cursor="grabbing";
+});
+netC.addEventListener("pointermove",e=>{
+  const [mx,my]=localXY(e);
+  if(dragging){
+    dragMoved+=Math.abs(mx-dragging.x)+Math.abs(my-dragging.y);
+    dragging.x=mx; dragging.y=my;
+    return;
+  }
+  const n=nodeAt(mx,my);
+  const hn=n?{l:n.l,i:n.i}:null;
+  let hl=null;
+  if(!hn){
+    let best=4;
+    for(const k of links){
+      const dx=k.x2-k.x1,dy=k.y2-k.y1,len2=dx*dx+dy*dy;
+      const t=clamp(len2?((mx-k.x1)*dx+(my-k.y1)*dy)/len2:0,0,1);
+      const d=Math.hypot(mx-(k.x1+t*dx),my-(k.y1+t*dy));
+      if(d<best){ best=d; hl=k; }
+    }
+  }
+  const key=o=>o?JSON.stringify(o):"-";
+  const changed=key(hn)!==key(hoverNode);
+  const сменился = changed;
+  hoverNode=hn; hoverLink=hl;
+  if(сменился){ hoverGrid=null; if(hn) обновитьКартуУзла(); }
+  const tip=$("#tip");
+  if(hl){ tip.style.display="block"; tip.style.left=mx+"px"; tip.style.top=my+"px";
+          tip.textContent="w = "+hl.v.toFixed(3); }
+  else tip.style.display="none";
+  netC.style.cursor=hn?"grab":"default";
+  if(changed) drawOut();
+});
+netC.addEventListener("pointerup",()=>{
+  if(!dragging) return;
+  const n=dragging; dragging=null;
+  netC.style.cursor="grab";
+  // короткий тычок по признаку = переключение, а не перетаскивание
+  if(dragMoved<4&&n.l===0){
+    if(!(featOn[n.i]&&featOn.filter(Boolean).length===1)){
+      featOn[n.i]=!featOn[n.i];
+      setRunning(false); rebuild(false);
+    }
+  }
+});
+netC.addEventListener("pointerleave",()=>{
+  hoverNode=null; hoverLink=null; hoverGrid=null; $("#tip").style.display="none"; drawOut();
+});
+window.addEventListener("keydown",e=>{
+  if(/INPUT|SELECT/.test(e.target.tagName)) return;
+  if(e.code==="Space"){ e.preventDefault(); setRunning(!running); }
+  if(e.key==="s"||e.key==="ы"){ setRunning(false); singleStep(); }
+  if(e.key==="r"||e.key==="к"){ setRunning(false); rebuild(false); }
+  if(e.key==="p"||e.key==="з"){
+    PULSE=!PULSE; autoTuned=true;               // ручное решение важнее автоподбора
+    $("#perfNote").style.display = PULSE?"none":"inline";
+    if(!PULSE) $("#perfNote").textContent="импульсы выключены · P включить";
+    drawNet(performance.now());
+  }
+});
+
+/* Пересчёт размеров — ResizeObserver, а не window.resize: на первом кадре
+   layout ещё не разложен и панель отдаёт нулевую высоту. */
+let refitting=false;
+const ro=new ResizeObserver(()=>{
+  if(refitting) return;
+  refitting=true; sizeChanged=false;
+  fitAll();
+  if(sizeChanged){ thumbs=null; drawAll(performance.now()); }
+  refitting=false;
+});
+ro.observe($("#netwrap")); ro.observe($(".out"));
+
+/* ==================== старт ==================== */
+(async function(){
+  [...$("#ds").children].forEach(b=>b.classList.toggle("on",b.dataset.v===dataset));
+  document.querySelectorAll("input[type=range]").forEach(paintRange);
+  fitAll();
+  if(location.protocol==="file:") return сервераНет(new Error("открыто как file://"));
+  drawPreviews();
+  await rebuild(true);
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
